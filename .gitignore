@@ -1,1 +1,4 @@
 *.csv
+/numberRecogniser/bin/
+/numberRecogniser/DATA/
+/numberRecogniser/obj/
