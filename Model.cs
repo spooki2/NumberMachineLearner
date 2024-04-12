@@ -2,7 +2,7 @@
 
 public static class Model
 {
-    public static void initRandom(ref Neuron[][] network)
+    public static void initRandom(Neuron[][] network)
     {
         Random random = new Random();
         for (int i = 0; i < network.Length; i++) // For each layer
@@ -38,7 +38,7 @@ public static class Model
         return arr;
     }
 
-    public static int feedImage(ref Neuron[][] network, int id)
+    public static int feedImage(Neuron[][] network, int id)
     {
         int label = 0;
         double[] img = new double[784];
@@ -51,7 +51,7 @@ public static class Model
         return label;
     }
 
-    public static void NeuronConnector(ref Neuron[][] Layers)
+    public static void NeuronConnector(Neuron[][] Layers)
     {
         for (int i = 0; i < Layers.Length - 1; i++) // For each layer except the last one
         {

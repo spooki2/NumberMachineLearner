@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public static class DataFeeder
 {
     public static string CsvFilePath =
-        @"C:\Users\spook\RiderProjects\numberRecogniser\numberRecogniser\DATA\mnist_train.csv";
+        @"C:\Users\spook\RiderProjects\numberRecogniser\NeuralNetworkDigitRecogniser\DATA\mnist_train.csv";
 
     public static String[] getCsv(int id)
     {

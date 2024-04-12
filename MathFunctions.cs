@@ -24,6 +24,16 @@ public class MathFunctions
         return expScores.Select(score => score / sumOfExp).ToArray();
     }
 
+    public static double getCost(Double[] output, Vector desire)
+    {
+        double cost = 0;
+        for (int i = 0; i < output.Length; i++)
+        {
+            cost += Math.Pow(output[i] - desire[i], 2);
+        }
+
+        return cost;
+    }
 
     //white = Calculate()
     //green = Calculate before Activator
@@ -31,131 +41,144 @@ public class MathFunctions
     //blue = weight
     //purple = bias
 
-    //CHAIN RULE:
 
-    public static void gradientDerivative(Neuron[] layer, Vector desire)
+    public static Vector getNewBiases(Double[] output,Neuron neuron, Vector desireVector)
     {
-        var Builder = MathNet.Numerics.LinearAlgebra.Vector<Double>.Build;
-        Vector calcLayer = Builder.DenseOfArray(layer.Select(neuron => neuron.Calculate()).ToArray());
-        Vector preActCalcLayer = Builder.DenseOfArray(layer.Select(neuron => neuron.preActivCalc()).ToArray());
-
-
-        int li = layer.Length - 1; //layer index
-        //for loop goes here ->
-        Vector biasCostTagVector = biasDerivative(preActCalcLayer, calcLayer, desire);
-        Vector weightCostTagVector =
-            weightDerivative(Builder.DenseOfArray(layer[li].Inputs), preActCalcLayer, calcLayer, desire);
+        Vector biasSteps = Vector.Build.Dense(neuron.Inputs.Length);
+        for (int i = 0; i < neuron.Inputs.Length; i++)
+        {
+            biasSteps[i] =
+                biasDerivative(neuron.preActivCalc(),(getCost(output, desireVector)));
+        }
+        //turn to step
+        biasSteps = biasSteps.Map(applyDirectionToLearningStep);
+        return biasSteps;
     }
 
-    public static Vector biasDerivative(Vector preActCalcLayer, Vector calc, Vector desire)
+    public static Vector getNewWeights(Double[] output,Neuron neuron, Vector desireVector)
     {
-        //biasDerivative = ReLUTAG(preActCalc)*(calculate-desire)
-        Vector reluTagApplied = preActCalcLayer.Map(ReLUtag);
-        Vector error = calc - desire;
-
-        return reluTagApplied.PointwiseMultiply(error);
+        Vector weightSteps = Vector.Build.Dense(neuron.Weights.Length);
+        for (int i = 0; i < neuron.Weights.Length; i++)
+        {
+            weightSteps[i] =
+                weightDerivative(neuron.Inputs[i], neuron.preActivCalc(), getCost(output, desireVector));
+        }
+        //turn to step
+        weightSteps = weightSteps.Map(applyDirectionToLearningStep);
+        return weightSteps;
     }
 
-    public static Vector weightDerivative(Vector inputLayer, Vector preActCalcLayer, Vector calc, Vector desire)
-    {
-        //could be wrong!
-        //weightDerivative = Input * ReLUtag(preActCalc)*(calc-desire)
-        Vector reluTagApplied = preActCalcLayer.Map(ReLUtag);
-        Vector error = calc - desire;
-        Vector leftPart = error.PointwiseMultiply(reluTagApplied);
 
-        return leftPart.PointwiseMultiply(error);
-    }
-
-    public static (double[], double[]) howDoPeopleComeUpWithThisShit(Neuron neuron, double desire)
+    public static (Vector, Vector) neuronSuggestedDirection(Double[] output,Neuron neuron, double desire) //neuron and its desire
     {
-        //DESIRE SHOULDNT BE A DOUBLE IT HOULD BE A VECTOR!
-        Console.WriteLine("size: {0}", neuron.Inputs.Length);
-        double[] costWeightLiM0tagVec = new double[neuron.Inputs.Length]; //adjusment for previous neuron weight
-        double[] costBiasLiM0tagVec = new double[neuron.Inputs.Length]; //adjusment for previous neuron bias
+        //put in neuron - get back vector of desired weight and bias changes
+
+        Vector desireVector = Vector.Build.DenseOfArray(Model.labelToArr(desire));
+        Vector weightStepVector = Vector.Build.Dense(neuron.Inputs.Length);
+        Vector biasStepVector = Vector.Build.Dense(neuron.Inputs.Length);
 
         for (int i = 0; i < neuron.Inputs.Length; i++)
         {
-            double BNC = neuron.Inputs[i];
-            double PAC = neuron.preActivCalc(); //pre activator calculate
-            double d, c;
-            (d, c) = (desire, neuron.Calculate());
-            costWeightLiM0tagVec[i] = ((preActivatorCalcWeightLIM0tag(BNC) * calcPreActivatorCalcLIM0tag(PAC) *
-                                        costCalcLIM0tag(d, c)));
-            costBiasLiM0tagVec[i] = (ReLUtag(PAC) * 2 * (c - d));
+            double biasDer = biasDerivative(neuron.preActivCalc(), getCost(output, desireVector));
+            double weigtDer = biasDer * neuron.Inputs[i];
+            weightStepVector[i] += biasDer;
+            biasStepVector[i] += weigtDer;
         }
 
-        return (costWeightLiM0tagVec, costBiasLiM0tagVec);
+        return (weightStepVector, biasStepVector);
     }
 
-    //=
-    public static double preActivatorCalcWeightLIM0tag(double backNeuronCalculate)
+    public static double biasDerivative(double preActCalc, double cost)
     {
-        return backNeuronCalculate;
+        //biasDerivative = ReLUTAG(preActCalc)*(calculate-desire)
+        return ReLUtag(preActCalc) * (cost);
     }
 
-    //*
-    public static double calcPreActivatorCalcLIM0tag(double preActivatorCalc)
+    public static double weightDerivative(double input, double preActCalc, double cost)
     {
-        return MathFunctions.ReLUtag(preActivatorCalc);
+        //weightDerivative = Input * ReLUtag(preActCalc)*(calc-desire)
+        return input * biasDerivative(preActCalc, cost);
     }
 
-    //*
-    public static double costCalcLIM0tag(double desire, double calculate)
+
+
+
+    public static Double applyDirectionToLearningStep(double direction)
     {
-        return 2 * (calculate - desire);
+        return direction * LEARNING_RATE;
     }
-
-
-    /*
-    public static void backPropagation(ref Neuron[][] network, double label)
-    {
-        double[] desire = Model.labelToArr(label);
-        //currently the function above works on 1 neuron and all its sons.
-        //do this to the entire last layer and get the average vector map
-        //update the weights using learning curve/gradient decrease (?)
-        //now with the fixed weights do this to the previous layer, continue till start
-
-        for (int i = network.Length - 1; i >= 0; i--)
-        {
-            //these get applied each layer
-            int devider = 0;
-            double[] avgWeightDerivative = new double[network[i].Length];
-            double[] avgBiasDerivative = new double[network[i].Length];
-            //output -> hidden -> input
-            Neuron[] layer = network[i];
-            for (int q = 0; q < layer.Length; q++)
-            {
-                double[] tempW = new double[layer[q].Inputs.Length];
-                double[] tempB = new double[layer[q].Inputs.Length];
-                (tempW, tempB) = howDoPeopleComeUpWithThisShit(layer[q], desire);
-                for (int j = 0; j < layer[q].Inputs.Length; j++)
-                {
-                    avgWeightDerivative[j] += tempW[j];
-                    avgBiasDerivative[j] += tempB[j];
-                }
-
-                devider++;
-            }
-
-            //avg out the layer
-            for (int j = 0; j < avgWeightDerivative.Length; j++)
-            {
-                avgWeightDerivative[j] /= devider;
-                avgBiasDerivative[j] /= devider;
-            }
-
-            //apply the changes
-            for (int q = 0; q < layer.Length; q++)
-            {
-                for (int j = 0; j < layer[q].Weights.Length; j++)
-                {
-                    //take step towards using learning rate
-                    layer[q].Weights[j] -= LEARNING_RATE * avgWeightDerivative[j];
-                    layer[q].Bias -= LEARNING_RATE * avgBiasDerivative[j];
-                }
-            }
-        }
-    }
-    */
 }
+/*
+   public static (double[], double[]) howDoPeopleComeUpWithThisShit(Neuron neuron, double desire)
+   {
+       //DESIRE SHOULDNT BE A DOUBLE IT HOULD BE A VECTOR!
+       Console.WriteLine("size: {0}", neuron.Inputs.Length);
+       double[] costWeightLiM0tagVec = new double[neuron.Inputs.Length]; //adjusment for previous neuron weight
+       double[] costBiasLiM0tagVec = new double[neuron.Inputs.Length]; //adjusment for previous neuron bias
+
+       for (int i = 0; i < neuron.Inputs.Length; i++)
+       {
+           double BNC = neuron.Inputs[i];
+           double PAC = neuron.preActivCalc(); //pre activator calculate
+           double d, c;
+           (d, c) = (desire, neuron.Calculate());
+           costWeightLiM0tagVec[i] = ((preActivatorCalcWeightLIM0tag(BNC) * calcPreActivatorCalcLIM0tag(PAC) *
+                                       costCalcLIM0tag(d, c)));
+           costBiasLiM0tagVec[i] = (ReLUtag(PAC) * 2 * (c - d));
+       }
+
+       return (costWeightLiM0tagVec, costBiasLiM0tagVec);
+   }
+}
+
+
+public static void backPropagation(ref Neuron[][] network, double label)
+{
+   double[] desire = Model.labelToArr(label);
+   //currently the function above works on 1 neuron and all its sons.
+   //do this to the entire last layer and get the average vector map
+   //update the weights using learning curve/gradient decrease (?)
+   //now with the fixed weights do this to the previous layer, continue till start
+
+   for (int i = network.Length - 1; i >= 0; i--)
+   {
+       //these get applied each layer
+       int devider = 0;
+       double[] avgWeightDerivative = new double[network[i].Length];
+       double[] avgBiasDerivative = new double[network[i].Length];
+       //output -> hidden -> input
+       Neuron[] layer = network[i];
+       for (int q = 0; q < layer.Length; q++)
+       {
+           double[] tempW = new double[layer[q].Inputs.Length];
+           double[] tempB = new double[layer[q].Inputs.Length];
+           (tempW, tempB) = howDoPeopleComeUpWithThisShit(layer[q], desire);
+           for (int j = 0; j < layer[q].Inputs.Length; j++)
+           {
+               avgWeightDerivative[j] += tempW[j];
+               avgBiasDerivative[j] += tempB[j];
+           }
+
+           devider++;
+       }
+
+       //avg out the layer
+       for (int j = 0; j < avgWeightDerivative.Length; j++)
+       {
+           avgWeightDerivative[j] /= devider;
+           avgBiasDerivative[j] /= devider;
+       }
+
+       //apply the changes
+       for (int q = 0; q < layer.Length; q++)
+       {
+           for (int j = 0; j < layer[q].Weights.Length; j++)
+           {
+               //take step towards using learning rate
+               layer[q].Weights[j] -= LEARNING_RATE * avgWeightDerivative[j];
+               layer[q].Bias -= LEARNING_RATE * avgBiasDerivative[j];
+           }
+       }
+   }
+}
+*/

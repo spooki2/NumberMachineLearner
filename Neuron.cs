@@ -10,7 +10,7 @@ public struct Neuron
     {
         Func<double, double> activationFunc = MathFunctions.ReLU;
         return activationFunc(preActivCalc());
-    }//TYPING I DONT REALLY KNOW HOW TO USE THIS BRO
+    }
 
     public double preActivCalc()
     {
