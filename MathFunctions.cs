@@ -1,5 +1,8 @@
 ﻿using System.Numerics;
-//switch over to cuda
+using MathNet.Numerics;
+using Vector = MathNet.Numerics.LinearAlgebra.Vector<double>;
+using Matrix = MathNet.Numerics.LinearAlgebra.Matrix<double>;
+
 namespace numberRecogniser;
 
 public class MathFunctions
@@ -10,6 +13,7 @@ public class MathFunctions
 
     public static Func<double, double> ReLUtag = x => x > 0 ? 1 : 0;
     const double LIM0 = 0.000001;
+
 
     public static double[] Softmax(Neuron[] neurons)
     {
@@ -29,14 +33,47 @@ public class MathFunctions
 
     //CHAIN RULE:
 
+    public static void gradientDerivative(Neuron[] layer, Vector desire)
+    {
+        var Builder = MathNet.Numerics.LinearAlgebra.Vector<Double>.Build;
+        Vector calcLayer = Builder.DenseOfArray(layer.Select(neuron => neuron.Calculate()).ToArray());
+        Vector preActCalcLayer = Builder.DenseOfArray(layer.Select(neuron => neuron.preActivCalc()).ToArray());
+
+
+        int li = layer.Length - 1; //layer index
+        //for loop goes here ->
+        Vector biasCostTagVector = biasDerivative(preActCalcLayer, calcLayer, desire);
+        Vector weightCostTagVector =
+            weightDerivative(Builder.DenseOfArray(layer[li].Inputs), preActCalcLayer, calcLayer, desire);
+    }
+
+    public static Vector biasDerivative(Vector preActCalcLayer, Vector calc, Vector desire)
+    {
+        //biasDerivative = ReLUTAG(preActCalc)*(calculate-desire)
+        Vector reluTagApplied = preActCalcLayer.Map(ReLUtag);
+        Vector error = calc - desire;
+
+        return reluTagApplied.PointwiseMultiply(error);
+    }
+
+    public static Vector weightDerivative(Vector inputLayer, Vector preActCalcLayer, Vector calc, Vector desire)
+    {
+        //could be wrong!
+        //weightDerivative = Input * ReLUtag(preActCalc)*(calc-desire)
+        Vector reluTagApplied = preActCalcLayer.Map(ReLUtag);
+        Vector error = calc - desire;
+        Vector leftPart = error.PointwiseMultiply(reluTagApplied);
+
+        return leftPart.PointwiseMultiply(error);
+    }
+
     public static (double[], double[]) howDoPeopleComeUpWithThisShit(Neuron neuron, double desire)
     {
         //DESIRE SHOULDNT BE A DOUBLE IT HOULD BE A VECTOR!
-        Console.WriteLine("size: {0}",neuron.Inputs.Length);
+        Console.WriteLine("size: {0}", neuron.Inputs.Length);
         double[] costWeightLiM0tagVec = new double[neuron.Inputs.Length]; //adjusment for previous neuron weight
         double[] costBiasLiM0tagVec = new double[neuron.Inputs.Length]; //adjusment for previous neuron bias
 
-        //bias = ReLUTAG(preActCalc)*2*(calculate-desire)
         for (int i = 0; i < neuron.Inputs.Length; i++)
         {
             double BNC = neuron.Inputs[i];
@@ -69,6 +106,8 @@ public class MathFunctions
         return 2 * (calculate - desire);
     }
 
+
+    /*
     public static void backPropagation(ref Neuron[][] network, double label)
     {
         double[] desire = Model.labelToArr(label);
@@ -118,4 +157,5 @@ public class MathFunctions
             }
         }
     }
+    */
 }

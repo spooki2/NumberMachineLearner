@@ -1,6 +1,6 @@
 ﻿namespace numberRecogniser;
 
-public class Neuron
+public struct Neuron
 {
     public double Bias { get; set; }
     public double[] Weights { get; set; }
@@ -10,7 +10,7 @@ public class Neuron
     {
         Func<double, double> activationFunc = MathFunctions.ReLU;
         return activationFunc(preActivCalc());
-    }
+    }//TYPING I DONT REALLY KNOW HOW TO USE THIS BRO
 
     public double preActivCalc()
     {
@@ -37,11 +37,25 @@ public class Neuron
         this.Inputs = new double[0];
     }
 
+
     public void Connect(Neuron n2)
     {
         double[] newInputs = new double[n2.Inputs.Length + 1];
         n2.Inputs.CopyTo(newInputs, 0);
         newInputs[n2.Inputs.Length] = this.Calculate();
         n2.Inputs = newInputs;
+    }
+
+    public bool Equals(Neuron other)
+    {
+        return Bias.Equals(other.Bias) && Weights.Equals(other.Weights) && Inputs.Equals(other.Inputs);
+    }
+    public static bool operator == (Neuron n1, Neuron n2)
+    {
+        return n1.Equals(n2);
+    }
+    public static bool operator != (Neuron n1, Neuron n2)
+    {
+        return !n1.Equals(n2);
     }
 }

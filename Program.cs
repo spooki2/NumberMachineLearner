@@ -1,4 +1,5 @@
-﻿using numberRecogniser;
+﻿using MathNet.Numerics.LinearAlgebra;
+using numberRecogniser;
 using NumberRecogniser;
 
 Random random = new Random();
@@ -12,6 +13,7 @@ Model.initRandom(ref network);
 Model.NeuronConnector(ref network);
 
 
+
 (Double[], int) run()
 {
     int imageID = random.Next(0, 60000);
@@ -22,7 +24,7 @@ Model.NeuronConnector(ref network);
     //CSV2JPEG.Convert(img);
 
     //layer3 softmax
-    MathFunctions.backPropagation(ref network, label);
+    //MathFunctions.backPropagation(ref network, label);
     Double[] output = MathFunctions.Softmax(layer3);
     return (output, label);
 }
