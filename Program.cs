@@ -19,7 +19,7 @@ Model.NeuronConnector(network);
 //CSV2JPEG.Convert(img);
 while (true)
 {
-    NetworkTrainer.run(network);
+    NetworkTrainer.run(network,100);
 }
 /*
 Console.WriteLine("\n=== INPUT LAYER ===\n");

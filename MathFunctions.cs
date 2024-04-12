@@ -7,7 +7,8 @@ namespace numberRecogniser;
 
 public class MathFunctions
 {
-    const double LEARNING_RATE = 0.01;
+    const double LEARNING_RATE = 0.00001;
+
 
     public static Func<double, double> ReLU = x => Math.Max(0, x);
 
