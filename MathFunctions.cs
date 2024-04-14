@@ -7,22 +7,27 @@ namespace numberRecogniser;
 
 public class MathFunctions
 {
-    const double LEARNING_RATE = 0.00001;
-
+    const double LEARNING_RATE = 0.01;
+    //public const double LIM0 = Double.MinValue;
+    public const double LIM0 = 0.000001;
 
     public static Func<double, double> ReLU = x => Math.Max(0, x);
 
     public static Func<double, double> ReLUtag = x => x > 0 ? 1 : 0;
-    const double LIM0 = 0.000001;
 
 
-    public static double[] Softmax(Neuron[] neurons)
+    public static double[] softMax(Neuron[] neurons)
     {
         var scores = neurons.Select(neuron => neuron.Calculate()).ToArray();
         double maxScore = scores.Max(); // For numerical stability
         var expScores = scores.Select(score => Math.Exp(score - maxScore)).ToArray();
         double sumOfExp = expScores.Sum();
         return expScores.Select(score => score / sumOfExp).ToArray();
+    }
+
+    public static double softMax(Neuron neuron)
+    {
+        return Math.Exp(neuron.Calculate()) / Math.Exp(neuron.Calculate());
     }
 
     public static double getCost(Double[] output, Vector desire)
@@ -89,19 +94,22 @@ public class MathFunctions
         return (weightStepVector, biasStepVector);
     }
 
-    public static double biasDerivative(double preActCalc, double cost)
+    public static double biasDerivative(double preActCalc, double calcSubDes)
     {
         //biasDerivative = ReLUTAG(preActCalc)*(calculate-desire)
-        return ReLUtag(preActCalc) * (cost);
+        return ReLUtag(preActCalc) * (calcSubDes);
     }
 
-    public static double weightDerivative(double input, double preActCalc, double cost)
+    public static double weightDerivative(double input, double preActCalc, double calcSubDes)
     {
         //weightDerivative = Input * ReLUtag(preActCalc)*(calc-desire)
-        return input * biasDerivative(preActCalc, cost);
+        return input * biasDerivative(preActCalc, calcSubDes);
     }
 
-
+    public static double Sigmoid(double value) {
+        double k = Math.Exp(value);
+        return k / (0.1f + k);
+    }
 
 
     public static Double applyDirectionToLearningStep(double direction)

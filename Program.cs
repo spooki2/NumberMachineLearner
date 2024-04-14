@@ -8,45 +8,31 @@ Neuron[] layer0 = new Neuron[784];
 Neuron[] layer1 = new Neuron[16];
 Neuron[] layer2 = new Neuron[16];
 Neuron[] layer3 = new Neuron[10];
-Neuron[][] network = new[] { layer0, layer1, layer2, layer3 };
-Model.initRandom(network);
-Model.NeuronConnector(network);
+Neuron[][] network = new[] {layer0, layer1, layer2, layer3 };
 
 
-//img stuff
-//DataFeeder.getImage(imageID);
-//(int _, Double[] img) = DataFeeder.getImage(imageID);
-//CSV2JPEG.Convert(img);
+
+
+int t = 0;
+int label = random.Next(0, 60000);
+double[] img = new double[784];
+(t, img) = DataFeeder.getImage(label);
+
+Neuron neuron = new Neuron(784);
+
+
+neuron.Bias = random.NextDouble();
+singularNeuronTrain.initRandom(neuron);
 while (true)
 {
-    NetworkTrainer.run(network,100);
-}
-/*
-Console.WriteLine("\n=== INPUT LAYER ===\n");
-for (int i = 0; i < 5; i++)
-{
-    Console.WriteLine("{0}", layer0[i].Calculate());
+    singularNeuronTrain.runSingle(network[1][0], img);
 }
 
-Console.WriteLine("\n=== HIDDEN LAYER A ===\n");
-for (int i = 0; i < 5; i++)
-{
-    Console.WriteLine("{0}", layer1[i].Calculate());
-}
+//neuron data:
+//[inputs weight | <neuron> | output]
+//output layer then serves as input for next neuron
 
-Console.WriteLine("\n=== HIDDEN LAYER B ===\n");
-for (int i = 0; i < 5; i++)
-{
-    Console.WriteLine("{0}", layer2[i].Calculate());
-}
-
-Console.WriteLine("\n=== OUTPUT LAYER ===\n");
-for (int i = 0; i < 5; i++)
-{
-    Console.WriteLine("{0}", output[i]);
-}
-
-//index of highest float in output
-//int bestGuess = Array.IndexOf(output, output.Max());
-//Console.WriteLine("\nLABEL: {0}\nRESULT: {1}", label, bestGuess);
-*/
+//first layer = 784 long array of doubles, that represent image output (pixel data)
+//second layer = 16 long array of neurons, each has 784 inputs & weights. 1 bias and 1 output
+//third layer = 16 long array of neurons, each has 16 inputs & weights. 1 bias and 1 output
+//fourth layer = 10 long array of neurons, each has 16 inputs & weights. 1 bias and 1 output

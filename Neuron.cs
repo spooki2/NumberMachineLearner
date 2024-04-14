@@ -37,6 +37,12 @@ public struct Neuron
         this.Inputs = new double[0];
     }
 
+    public Neuron(int inputCount)
+    {
+        this.Bias = 0;
+        this.Weights = new double[inputCount];
+        this.Inputs = new double[inputCount];
+    }
 
     public void Connect(Neuron n2)
     {
