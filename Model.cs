@@ -1,32 +1,42 @@
 ﻿namespace numberRecogniser;
 
+using MathNet.Numerics.LinearAlgebra;
 using System;
 using System.Drawing;
 
 public static class Model
 {
-    public static void initRandom(Neuron[][] network)
-    {//make new neuron with random values and put in
-        Random random = new Random();
-        for (int i = 0; i < network.Length; i++) // For each layer
+    public static void initRandom(Neuron[] hiddenLayer1, Neuron[] hiddenLayer2, Neuron[] outputLayer)
+    {
+        Random _random = new Random();
+        for (int i = 0; i < hiddenLayer1.Length; i++)
         {
-            for (int j = 0; j < network[i].Length; j++) // For each neuron
+            hiddenLayer1[i] = new Neuron
             {
-                network[i][j] = new Neuron();
-                network[i][j].Bias = random.NextDouble();
-                network[i][j].Weights = new double[network[i][j].Inputs.Length];
-                network[i][j].Inputs = new double[network[i][j].Weights.Length];
-                //random weights
-                for (int k = 0; k < network[i][j].Weights.Length; k++)
-                {
-                    network[i][j].Weights[k] = random.NextDouble();
-                }
-                //random inputs
-                for (int k = 0; k < network[i][j].Inputs.Length; k++)
-                {
-                    network[i][j].Inputs[k] = random.NextDouble();
-                }
-            }
+                Weights = Vector<double>.Build.Random(784),
+                Inputs = Vector<double>.Build.Random(784),
+                Bias = _random.NextDouble()
+            };
+        }
+
+        for (int i = 0; i < hiddenLayer2.Length; i++)
+        {
+            hiddenLayer2[i] = new Neuron
+            {
+                Weights = Vector<double>.Build.Random(16),
+                Inputs = Vector<double>.Build.Random(16),
+                Bias = _random.NextDouble()
+            };
+        }
+
+        for (int i = 0; i < outputLayer.Length; i++)
+        {
+            outputLayer[i] = new Neuron
+            {
+                Weights = Vector<double>.Build.Random(16),
+                Inputs = Vector<double>.Build.Random(16),
+                Bias = _random.NextDouble()
+            };
         }
     }
 
@@ -50,7 +60,7 @@ public static class Model
         return arr;
     }
 
-    public static void randomWeights(Neuron[][] network)
+    public static void randomWeights(DepNeuron[][] network)
     {
         Random random = new Random();
         for (int i = 0; i < network.Length; i++) // For each layer
@@ -64,27 +74,16 @@ public static class Model
             }
         }
     }
-    public static int feedImage(Neuron[][] network, int id)
-    {
-        int label = 0;
-        double[] img = new double[784];
-        (label, img) = DataFeeder.getImage(id);
-        for (int i = 0; i < img.Length; i++)
-        {
-            network[0][i].Inputs = new double[] { img[i] };
-        }
-
-        return label;
-    }
 
 
-    public static void NeuronConnector(Neuron[][] network)
+
+    public static void NeuronConnector(DepNeuron[][] network)
     {
         // Make each neuron's inputs be the outputs of neurons in the previous layer
         for (int i = 0; i < network.Length - 1; i++) // Iterate over each layer
         {
-            Neuron[] nextLayer = network[i + 1];
-            Neuron[] currLayer = network[i];
+            DepNeuron[] nextLayer = network[i + 1];
+            DepNeuron[] currLayer = network[i];
             for (int n = 0; n < nextLayer.Length; n++) // Iterate over each neuron in the next layer
             {
                 for (int j = 0; j < currLayer.Length; j++) // Iterate over each neuron in the current layer
@@ -96,7 +95,7 @@ public static class Model
     }
 
 
-    public static void DrawImageFromDoubles(double[] pixels)
+    public static void DrawImageFromDoubles(double[] pixels,String name)
     {
         Bitmap image = new Bitmap(28, 28);
 
@@ -121,7 +120,7 @@ public static class Model
             image.SetPixel(x, y, color);
         }
 
-        image.Save("output.png", System.Drawing.Imaging.ImageFormat.Png);
+        image.Save(name, System.Drawing.Imaging.ImageFormat.Png);
         //throw excep
     }
 }
