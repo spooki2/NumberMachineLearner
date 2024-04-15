@@ -9,35 +9,46 @@ public static class Model
     public static void initRandom(Neuron[] hiddenLayer1, Neuron[] hiddenLayer2, Neuron[] outputLayer)
     {
         Random _random = new Random();
-        for (int i = 0; i < hiddenLayer1.Length; i++)
+        for (int i = 0; i < 16; i++)
         {
             hiddenLayer1[i] = new Neuron
             {
-                Weights = Vector<double>.Build.Random(784),
-                Inputs = Vector<double>.Build.Random(784),
-                Bias = _random.NextDouble()
+                Weights = GenerateRandomVector(784, _random, -0.5, 0.5),
+                Inputs = GenerateRandomVector(784, _random, -0.5, 0.5),
+                Bias = 0
             };
         }
 
-        for (int i = 0; i < hiddenLayer2.Length; i++)
+        for (int i = 0; i < 16; i++)
         {
             hiddenLayer2[i] = new Neuron
             {
-                Weights = Vector<double>.Build.Random(16),
-                Inputs = Vector<double>.Build.Random(16),
-                Bias = _random.NextDouble()
+                Weights = GenerateRandomVector(16, _random, -0.5, 0.5),
+                Inputs = GenerateRandomVector(16, _random, -0.5, 0.5),
+                Bias = 0
             };
         }
 
-        for (int i = 0; i < outputLayer.Length; i++)
+        for (int i = 0; i < 10; i++)
         {
             outputLayer[i] = new Neuron
             {
-                Weights = Vector<double>.Build.Random(16),
-                Inputs = Vector<double>.Build.Random(16),
-                Bias = _random.NextDouble()
+                Weights = GenerateRandomVector(16, _random, -0.5, 0.5),
+                Inputs = GenerateRandomVector(16, _random, -0.5, 0.5),
+                Bias = 0
             };
         }
+    }
+
+    private static Vector<double> GenerateRandomVector(int size, Random random, double minValue, double maxValue)
+    {
+        var vector = Vector<double>.Build.Dense(size);
+        for (int i = 0; i < size; i++)
+        {
+            vector[i] = random.NextDouble() * (maxValue - minValue) + minValue;
+        }
+
+        return vector;
     }
 
 
@@ -76,7 +87,6 @@ public static class Model
     }
 
 
-
     public static void NeuronConnector(DepNeuron[][] network)
     {
         // Make each neuron's inputs be the outputs of neurons in the previous layer
@@ -95,7 +105,7 @@ public static class Model
     }
 
 
-    public static void DrawImageFromDoubles(double[] pixels,String name)
+    public static void DrawImageFromDoubles(double[] pixels, String name)
     {
         Bitmap image = new Bitmap(28, 28);
 

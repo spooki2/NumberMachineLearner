@@ -5,6 +5,16 @@ namespace numberRecogniser;
 
 public class Propagate
 {
+    public static Vector<double> forward(Neuron[] inputs, Neuron[] layer)
+    {
+        Vector<double> inputsVec = Vector<double>.Build.Dense(inputs.Length);
+        for (int i = 0; i < inputs.Length; i++)
+        {
+            inputsVec[i] = inputs[i].Calculate();
+        }
+        return forward(inputsVec, layer);
+    }
+
     public static Vector<double> forward(Vector<double> inputs, Neuron[] layer)
     {
         //inputs vector
@@ -29,7 +39,7 @@ public class Propagate
     {
 
         Matrix<double> newWeight = MathFunctions.newWeight(layer, MathFunctions.getDesireVector(label));
-        Vector<double> newBias = Vector<double>.Build.Dense(layer.Length);
+        Vector<double> newBias = MathFunctions.newBias(layer, MathFunctions.getDesireVector(label));
         return (newWeight, newBias);
     }
 

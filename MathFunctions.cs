@@ -7,7 +7,7 @@ public class MathFunctions
 {
     const double LEARNING_RATE = 0.01;
 
-    public const double LIM0 = 0.00001;
+    public const double LIM0 = 0.0000001;
 
     public static Func<double, double> ReLU = x => Math.Max(0, x);
 
@@ -63,10 +63,29 @@ public class MathFunctions
     }
 
 
-    public static Vector<double> newBias(Neuron[] layer, Vector<double> desireVector)
+    public static Vector<double> newBias(Neuron[] currLayer, Vector<double> desireVector)
     {
-        Vector<double> sumBias = Vector<double>.Build.Dense(layer.Length);
-        return sumBias;
+        Vector<double> newBiases = Vector<double>.Build.Dense(currLayer.Length);
+        for (int l = 0; l < currLayer.Length; l++)
+        {
+            Neuron curr = currLayer[l];
+            double costBefore = 0;
+            double costAfter = 0;
+
+            for (int i = 0; i < curr.Inputs.Count; i++)
+            {
+                costBefore += Math.Pow(curr.Bias - curr.Inputs[i], 2);
+                costAfter += Math.Pow(curr.Bias + MathFunctions.LIM0 - curr.Inputs[i], 2);
+            }
+
+            costBefore /= curr.Inputs.Count;
+            costAfter /= curr.Inputs.Count;
+
+            double biasDer = (costAfter - costBefore) / MathFunctions.LIM0;
+            newBiases[l] = MathFunctions.applyDirectionToLearningStep(biasDer);
+        }
+
+        return newBiases;
     }
 
 

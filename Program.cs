@@ -7,10 +7,12 @@ using Vector = MathNet.Numerics.LinearAlgebra.Complex32.Vector;
 
 Random random = new Random();
 Vector<double> inputs = Vector<double>.Build.Dense(784);
-Neuron[] hiddenLayer1 = new Neuron[2];
+Neuron[] hiddenLayer1 = new Neuron[16];
 Neuron[] hiddenLayer2 = new Neuron[16];
 Neuron[] outputLayer = new Neuron[10];
 Neuron[][] network = { hiddenLayer1, hiddenLayer2, outputLayer };
+
+
 Model.initRandom(hiddenLayer1, hiddenLayer2, outputLayer);
 
 //fill inputs with image
@@ -24,75 +26,116 @@ for (int i = 0; i < inputs.Count; i++)
 }
 
 
-imageIndex = random.Next(0, 60000);
 (label, image) = DataFeeder.getImage(imageIndex);
 
-for (int i = 0; i < image.Length; i++)
-{
-    inputs[i] = image[i];
-}
-
-Propagate.forward(inputs, hiddenLayer1);
-//singular layer train
-int stohastic = 25;
-Matrix<double> massWeight = Matrix<double>.Build.Dense(0, 0);
-Vector<double> massBias = Vector<double>.Build.Dense(0);
 
 while (true)
 {
-    Neuron[] currLayer = hiddenLayer1;
-    Matrix<double> newWeight = Matrix<double>.Build.Dense(0, 0);
-    Vector<double> newBias = Vector<double>.Build.Dense(0);
-    (newWeight, newBias) = Propagate.backward(currLayer, label); //BRINGS BACK ONLY THE FIRST NEURON
-    massWeight = Matrix<double>.Build.Dense(newWeight.RowCount,newWeight.ColumnCount);
-    massBias = Vector<double>.Build.Dense(newBias.Count);
-    massWeight += newWeight;
-    massBias += newBias;
-    if (stohastic == 0)
+    //imageIndex = random.Next(0, 60000);
+    imageIndex = 1;
+    (label, image) = DataFeeder.getImage(imageIndex);
+    for (int i = 0; i < image.Length; i++)
     {
-        Propagate.applyLayer(massWeight.Column(0), newBias, currLayer); //should be row but flipped, works either way.
-        Propagate.applyLayer(massWeight.Column(1), newBias, currLayer);
-        stohastic = 25;
-        Console.WriteLine("STOHASTIC\n");
+        inputs[i] = image[i];
     }
 
-    //Propagate.applyLayer(newWeight.Column(0), newBias, currLayer);
-
+    //COPY PASTE THIS
+    Propagate.forward(inputs, hiddenLayer1);
+    networkTrainer.run(inputs, hiddenLayer1, label);
 
     double cost = 0;
-    cost = MathFunctions.getCostAlt(currLayer[0].Weights, currLayer[0].Inputs);
-    Console.WriteLine("cost: {0}", cost.ToString("F12"));
-
-    double[] weights = new double[784];
-    for (int i = 0; i < currLayer[0].Weights.Count; i++)
+    for (int i = 0; i < hiddenLayer1.Length; i++)
     {
-        weights[i] = (currLayer[0].Weights[i]);
+        cost = MathFunctions.getCost(hiddenLayer1[i].Weights, hiddenLayer1[i].Inputs);
     }
 
-    double[] weights2 = new double[784];
-    for (int i = 0; i < currLayer[1].Weights.Count; i++)
+    cost /= hiddenLayer1.Length;
+
+    // Console.WriteLine("Cost - 1: {0}", cost.ToString("F12"));
+
+    //COPY PASTE THIS
+
+    Vector<double> hl1Calc = Vector<double>.Build.Dense(hiddenLayer1.Length);
+
+    for (int i = 0; i < hl1Calc.Count; i++)
     {
-        weights2[i] = (currLayer[1].Weights[i]);
+        hl1Calc[i] = hiddenLayer1[i].Calculate();
     }
 
-    Model.DrawImageFromDoubles(weights, "output.png");
-    Model.DrawImageFromDoubles(weights2, "output2.png");
-    stohastic--;
-}
+    networkTrainer.run(hl1Calc, hiddenLayer2, label);
+    Console.WriteLine("TEST AREA");
+    double cost2 = 0;
+    for (int i = 0; i < hiddenLayer2.Length; i++)
+    {
+        cost2 = MathFunctions.getCost(hiddenLayer2[i].Weights, hiddenLayer2[i].Inputs);
+    }
+
+    cost2 /= hiddenLayer1.Length;
+
+    // Console.WriteLine("Cost - 2: {0}", cost2.ToString("F12"));
 
 
-while (true)
-{
-    //FRONT PROPAGATION
-    Vector<double> output0 = Propagate.forward(inputs, network[0]);
-    Vector<double> output1 = Propagate.forward(output0, network[1]);
-    Vector<double> finalOutput = Propagate.forward(output1, network[2]);
-    //FRONT PROPAGATION
+    //COST 3
 
-    finalOutput = MathFunctions.softMax(finalOutput); // should be above or below?
-    double cost = 0;
-    cost = MathFunctions.getCost(finalOutput, MathFunctions.getDesireVector(label));
-    Console.WriteLine("cost: {0}", cost.ToString("F12"));
+    Vector<double> hl2Calc = Vector<double>.Build.Dense(hiddenLayer2.Length);
+
+    for (int i = 0; i < hl2Calc.Count; i++)
+    {
+        hl2Calc[i] = hiddenLayer2[i].Calculate();
+    }
+
+    networkTrainer.run(hl2Calc, outputLayer, label);
+
+    double cost3 = 0;
+    for (int i = 0; i < outputLayer.Length; i++)
+    {
+        cost3 = MathFunctions.getCost(outputLayer[i].Weights, outputLayer[i].Inputs);
+    }
+
+    cost3 /= hiddenLayer2.Length;
+
+    //Console.WriteLine("Cost - 3: {0}", cost3.ToString("F12"));
+
+    //
+    Vector<double> outputCalcs = Vector<double>.Build.Dense(outputLayer.Length);
+
+    for (int i = 0; i < outputLayer.Length; i++)
+    {
+        outputCalcs[i] = outputLayer[i].Calculate();
+    }
+
+    double costf = MathFunctions.getCost(outputCalcs, MathFunctions.getDesireVector(label));
+
+    Console.WriteLine("=======");
+    for (int i = 0; i < outputLayer.Length; i++)
+    {
+        Console.WriteLine("{0}: {1}",i,outputLayer[i].Calculate());
+    }
+    Console.WriteLine("=======");
+    Console.WriteLine("Cost final: {0}", costf.ToString("F12"));
+
+// Iterate through each layer
+    for (int layerIndex = 0; layerIndex < network.Length; layerIndex++)
+    {
+        Neuron[] currLayer = network[layerIndex];
+
+        // Iterate through each neuron in the current layer
+        for (int neuronIndex = 0; neuronIndex < currLayer.Length; neuronIndex++)
+        {
+            Neuron currNeuron = currLayer[neuronIndex];
+            double[] weights = new double[currNeuron.Weights.Count];
+
+            // Extract weights from the current neuron
+            for (int i = 0; i < currNeuron.Weights.Count; i++)
+            {
+                weights[i] = currNeuron.Weights[i];
+            }
+
+            // Save weights as an image
+            string imageName = $"output_layer{layerIndex}_neuron{neuronIndex}.png";
+            Model.DrawImageFromDoubles(weights, imageName);
+        }
+    }
 }
 
 
