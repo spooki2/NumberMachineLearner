@@ -1,5 +1,7 @@
-﻿namespace numberRecogniser;
+﻿using MathNet.Numerics.LinearAlgebra.Complex32;
 
+namespace numberRecogniser;
+using MathNet.Numerics.LinearAlgebra;
 using Microsoft.VisualBasic.FileIO;
 using System.Collections.Generic;
 
@@ -38,7 +40,7 @@ public static class DataFeeder
     }
 
 
-    public static (int, double[]) getImage(int id)
+    public static (int, Vector<double>) getImage(int id)
     {
         int label = 0;
         double[] img = new double[784];
@@ -64,6 +66,8 @@ public static class DataFeeder
             }
         }
 
-        return (label, img);
+        Vector<double> image = Vector<double>.Build.DenseOfArray(img);
+
+        return (label, image);
     }
 }

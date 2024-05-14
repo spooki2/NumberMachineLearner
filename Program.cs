@@ -1,123 +1,114 @@
 ﻿using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Single;
 using numberRecogniser;
-using NumberRecogniser;
 using DenseVector = MathNet.Numerics.LinearAlgebra.Double.DenseVector;
 using Vector = MathNet.Numerics.LinearAlgebra.Complex32.Vector;
+using System.Text;
 
+Console.OutputEncoding = Encoding.UTF8;
+//layer init
+int smarts = 100;
+Layer layer1 = new Layer(smarts, 28 * 28);
+Layer layer2 = new Layer(smarts, smarts);
+Layer layer3 = new Layer(10, smarts);
+Layer[] _ = { layer1, layer2,layer3 };
+Network network = new Network(_);
+
+//random image
 Random random = new Random();
-Vector<double> inputs = Vector<double>.Build.Dense(784);
-Neuron[] hiddenLayer1 = new Neuron[16];
-Neuron[] hiddenLayer2 = new Neuron[16];
-Neuron[] outputLayer = new Neuron[10];
-Neuron[][] network = { hiddenLayer1, hiddenLayer2, outputLayer };
-
-
-Model.initRandom(hiddenLayer1, hiddenLayer2, outputLayer);
-
-//fill inputs with image
 int imageIndex = random.Next(0, 60000);
-int label;
-double[] image;
-(label, image) = DataFeeder.getImage(imageIndex);
-for (int i = 0; i < inputs.Count; i++)
-{
-    inputs[i] = image[i];
-}
+int label = 0;
 
 
-(label, image) = DataFeeder.getImage(imageIndex);
+Vector<double> inputs = Vector<double>.Build.Dense(0);
+(label, inputs) = DataFeeder.getImage(imageIndex);
+layer1.setInputs(inputs);
 
+
+network.initRandom();
+int count = 0;
+double right = 0;
+
+Layer layer1A = new Layer(network.layerArray[0].Length, network.layerArray[0][0].Inputs.Count);
+Layer layer2A = new Layer(network.layerArray[1].Length, network.layerArray[1][0].Inputs.Count);
+Layer layer3A = new Layer(network.layerArray[2].Length, network.layerArray[2][0].Inputs.Count);
+Layer[] _A = { layer1A,layer2A, layer3A };
+Network holderNetwork = new Network(_A);
+
+/*
+imageIndex = random.Next(0, 60000);
+imageIndex = 3;
+label = 0;
+inputs = Vector<double>.Build.Dense(0);
+*/
 
 while (true)
 {
-    //imageIndex = random.Next(0, 60000);
-    imageIndex = 1;
-    (label, image) = DataFeeder.getImage(imageIndex);
-    for (int i = 0; i < image.Length; i++)
+    //imageIndex = random.Next(0, 5000);
+    imageIndex = count;
+
+
+    /*
+    if (count % 2 == 0)
     {
-        inputs[i] = image[i];
+        imageIndex = 1;
+    }
+    else
+    {
+        imageIndex = 0;
     }
 
-    //COPY PASTE THIS
-    Propagate.forward(inputs, hiddenLayer1);
-    networkTrainer.run(inputs, hiddenLayer1, label);
 
-    double cost = 0;
-    for (int i = 0; i < hiddenLayer1.Length; i++)
+*/
+
+
+
+    (label, inputs) = DataFeeder.getImage(imageIndex);
+    layer1.setInputs(inputs);
+    network.Fprop();
+
+    Vector<double> outputVector = network.layerArray[network.layerArray.Length - 1].calculateLayer();
+    string indicator = "🟥";
+    if (label == outputVector.MaximumIndex())
     {
-        cost = MathFunctions.getCost(hiddenLayer1[i].Weights, hiddenLayer1[i].Inputs);
+        indicator = "🟩";
+        right++;
     }
 
-    cost /= hiddenLayer1.Length;
 
-    // Console.WriteLine("Cost - 1: {0}", cost.ToString("F12"));
+    Console.WriteLine("[{3}] Cost: {0}|label: {1}|guess {2} |{4}",
+        network.getCost(MathFunctions.getDesireVector(label)).ToString("F55"), label,
+        outputVector.MaximumIndex(), count, indicator);
 
-    //COPY PASTE THIS
 
-    Vector<double> hl1Calc = Vector<double>.Build.Dense(hiddenLayer1.Length);
+    //Console.WriteLine(network.getCost(MathFunctions.getDesireVector(label)).ToString("F80"));
 
-    for (int i = 0; i < hl1Calc.Count; i++)
+
+    holderNetwork.applyHolderNetwork(network.bprop(MathFunctions.getDesireVector(label)));
+    if (count % 100 == 0)
     {
-        hl1Calc[i] = hiddenLayer1[i].Calculate();
+        network.applyHolderNetwork(holderNetwork);
+        holderNetwork.clearNetwork();
     }
 
-    networkTrainer.run(hl1Calc, hiddenLayer2, label);
-    Console.WriteLine("TEST AREA");
-    double cost2 = 0;
-    for (int i = 0; i < hiddenLayer2.Length; i++)
+    if (count % 500 == 0)
     {
-        cost2 = MathFunctions.getCost(hiddenLayer2[i].Weights, hiddenLayer2[i].Inputs);
+        Console.WriteLine("");
+        Console.WriteLine("==> ACCURACY: {1}%",count,(right/5.0).ToString("F1"));
+        Console.WriteLine("");
+        right = 0;
     }
 
-    cost2 /= hiddenLayer1.Length;
 
-    // Console.WriteLine("Cost - 2: {0}", cost2.ToString("F12"));
-
-
-    //COST 3
-
-    Vector<double> hl2Calc = Vector<double>.Build.Dense(hiddenLayer2.Length);
-
-    for (int i = 0; i < hl2Calc.Count; i++)
+    if (count == 5000)
     {
-        hl2Calc[i] = hiddenLayer2[i].Calculate();
+        network.LEARNING_RATE /= 5;
     }
+    /*
 
-    networkTrainer.run(hl2Calc, outputLayer, label);
-
-    double cost3 = 0;
-    for (int i = 0; i < outputLayer.Length; i++)
+    for (int layerIndex = 0; layerIndex < network.layerArray.Length; layerIndex++)
     {
-        cost3 = MathFunctions.getCost(outputLayer[i].Weights, outputLayer[i].Inputs);
-    }
-
-    cost3 /= hiddenLayer2.Length;
-
-    //Console.WriteLine("Cost - 3: {0}", cost3.ToString("F12"));
-
-    //
-    Vector<double> outputCalcs = Vector<double>.Build.Dense(outputLayer.Length);
-
-    for (int i = 0; i < outputLayer.Length; i++)
-    {
-        outputCalcs[i] = outputLayer[i].Calculate();
-    }
-
-    double costf = MathFunctions.getCost(outputCalcs, MathFunctions.getDesireVector(label));
-
-    Console.WriteLine("=======");
-    for (int i = 0; i < outputLayer.Length; i++)
-    {
-        Console.WriteLine("{0}: {1}",i,outputLayer[i].Calculate());
-    }
-    Console.WriteLine("=======");
-    Console.WriteLine("Cost final: {0}", costf.ToString("F12"));
-
-// Iterate through each layer
-    for (int layerIndex = 0; layerIndex < network.Length; layerIndex++)
-    {
-        Neuron[] currLayer = network[layerIndex];
+        Layer currLayer = network.layerArray[layerIndex];
 
         // Iterate through each neuron in the current layer
         for (int neuronIndex = 0; neuronIndex < currLayer.Length; neuronIndex++)
@@ -136,6 +127,9 @@ while (true)
             Model.DrawImageFromDoubles(weights, imageName);
         }
     }
+
+    */
+    count++;
 }
 
 
